@@ -21,7 +21,10 @@ export default function PlayerCard({ radio, deckRef }: Props) {
 
   return (
     <section
-      className="card relative mx-auto backdrop-blur-xl backdrop-saturate-150 flex w-full max-w-[40rem] items-center gap-3.5 rounded-[1.5rem] px-3 py-3 sm:gap-4 sm:rounded-[2rem] sm:px-4 sm:py-3.5"
+      // `rounded-full` on a fixed-height row resolves to half the height, which
+      // is a true capsule rather than a rectangle with big corners. The extra
+      // right padding keeps the last button off the curve.
+      className="card relative mx-auto flex w-full max-w-[40rem] items-center gap-2.5 rounded-full py-2.5 pr-3.5 pl-2.5 backdrop-blur-2xl backdrop-saturate-[1.7] sm:gap-4 sm:py-3.5 sm:pr-5 sm:pl-4"
       aria-label="Now playing"
     >
       <Record track={track} spinning={radio.isPlaying} />
@@ -51,11 +54,11 @@ function Record({ track, spinning }: { track: Track | null; spinning: boolean })
   const [failed, setFailed] = useState<string | null>(null);
   const broken = !track || failed === track.youtubeId;
 
-  if (!track) return <div className="record size-[3.75rem] sm:size-[4.75rem]" data-blank="true" />;
+  if (!track) return <div className="record size-[3.25rem] sm:size-[4.75rem]" data-blank="true" />;
 
   return (
     <div
-      className="record size-[3.75rem] sm:size-[4.75rem]"
+      className="record size-[3.25rem] sm:size-[4.75rem]"
       data-spinning={spinning}
       data-blank={broken || undefined}
     >
@@ -136,20 +139,25 @@ function Meta({ track }: { track: Track | null }) {
         song title wearing it reads as a second logo.
       */}
       <h2
-        className="truncate font-semibold text-[clamp(0.98rem,3.6vw,1.22rem)] text-[color:var(--tb-cream)] leading-snug"
+        className="truncate font-semibold text-[0.92rem] text-[color:var(--tb-cream)] leading-snug sm:text-[1.15rem]"
         title={track.titleTa}
         lang="ta"
       >
         {track.titleTa}
       </h2>
-      <p className="truncate text-[0.72rem] text-[color:var(--tb-muted)] sm:text-[0.78rem]">
+      {/*
+        The metadata is added back a field at a time as the screen widens, so
+        each breakpoint shows what fits whole rather than truncating a longer
+        line. On a 375px phone that means the transliteration and the film, and
+        nothing dangling behind an ellipsis.
+      */}
+      <p className="truncate text-[0.66rem] text-[color:var(--tb-muted)] sm:text-[0.78rem]">
         {track.title}
         <span className="text-[color:var(--tb-muted)]/70">
           {" · "}
-          {track.movie} · {track.year}
+          {track.movie}
+          <span className="hidden sm:inline"> · {track.year}</span>
         </span>
-        {/* Composer is the spine of the curation, so it earns a line of its own
-            on wide screens rather than being the first thing truncated. */}
         <span className="hidden text-[color:var(--tb-muted)]/70 lg:inline">
           {" · "}
           {track.composer}
@@ -159,37 +167,52 @@ function Meta({ track }: { track: Track | null }) {
   );
 }
 
-/** 44px minimum on every target — these get pressed on a moving bus. */
+/**
+ * Skip buttons. 44px on every target — these get pressed on a moving bus — so
+ * on a phone the icon shrinks rather than the hit area.
+ */
 const BUTTON =
   "grid size-11 place-items-center rounded-full text-[color:var(--tb-cream)]/80 transition-colors hover:text-[color:var(--tb-cream)] disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[color:var(--tb-amber)] focus-visible:outline-offset-2";
+
+const SKIP_ICON = "size-4 sm:size-[1.15rem]";
 
 function Transport({ radio }: { radio: Radio }) {
   const disabled = !radio.ready || radio.playable === 0;
 
   return (
-    <div className="flex shrink-0 items-center">
+    <div className="-mr-1 flex shrink-0 items-center sm:mr-0">
+      {/*
+        Previous stays on a phone. It used to be hidden below `sm` to buy room
+        for the metadata, which left the one control people reach for when a
+        song they know goes past — the whole point of a shuffled radio — only
+        available on a desktop.
+      */}
       <button
         type="button"
         onClick={radio.skipPrev}
         disabled={disabled}
-        className={`${BUTTON} hidden sm:grid`}
+        className={BUTTON}
         aria-label="Previous track"
       >
-        <SkipBack className="size-[1.15rem]" fill="currentColor" strokeWidth={0} />
+        <SkipBack className={SKIP_ICON} fill="currentColor" strokeWidth={0} />
       </button>
 
       <button
         type="button"
         onClick={radio.toggle}
         disabled={disabled}
-        className="grid size-12 place-items-center rounded-full bg-[color:var(--tb-cream)] text-[color:var(--tb-night-deep)] shadow-[0_6px_18px_-6px_oklch(0.06_0.01_50/0.9)] transition-transform hover:scale-[1.04] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 focus-visible:outline-2 focus-visible:outline-[color:var(--tb-amber)] focus-visible:outline-offset-3"
+        className="grid size-11 place-items-center rounded-full bg-[color:var(--tb-cream)] text-[color:var(--tb-night-deep)] shadow-[0_6px_18px_-6px_oklch(0.06_0.01_50/0.9)] transition-transform hover:scale-[1.04] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 focus-visible:outline-2 focus-visible:outline-[color:var(--tb-amber)] focus-visible:outline-offset-3 sm:size-12"
         aria-label={radio.isPlaying ? "Pause" : "Play"}
         aria-pressed={radio.isPlaying}
       >
         {radio.isPlaying ? (
-          <Pause className="size-[1.15rem]" fill="currentColor" strokeWidth={0} />
+          <Pause className="size-[1.05rem] sm:size-[1.15rem]" fill="currentColor" strokeWidth={0} />
         ) : (
-          <Play className="size-[1.15rem] translate-x-[1px]" fill="currentColor" strokeWidth={0} />
+          <Play
+            className="size-[1.05rem] translate-x-[1px] sm:size-[1.15rem]"
+            fill="currentColor"
+            strokeWidth={0}
+          />
         )}
       </button>
 
@@ -200,7 +223,7 @@ function Transport({ radio }: { radio: Radio }) {
         className={BUTTON}
         aria-label="Next track"
       >
-        <SkipForward className="size-[1.15rem]" fill="currentColor" strokeWidth={0} />
+        <SkipForward className={SKIP_ICON} fill="currentColor" strokeWidth={0} />
       </button>
     </div>
   );
