@@ -4,12 +4,13 @@ import { tracks as authored } from "./tracks";
 /**
  * The newest year that makes the cut.
  *
- * The curation runs to 2010, but the town-bus sound people actually remember
- * thins out after the mid-2000s, so the shipped playlist stops at 2004. Raise
- * this to open the later years up — nothing else has to change, and the tracks
- * stay in the file either way.
+ * The curation runs to 2010, but the town-bus sound people actually remember is
+ * the Ilaiyaraaja-era spine, so the shipped playlist stops at 1997. Move this
+ * to open later years up — nothing else has to change, and the tracks stay in
+ * the file either way. For reference, at the current curation: 1990 → 48
+ * tracks, 1993 → 92, 1997 → 107, 2004 → 126.
  */
-export const LATEST_SHIPPED_YEAR = 2004;
+export const LATEST_SHIPPED_YEAR = 1997;
 
 /** Everything authored in `tracks.ts`, including years the site does not ship. */
 export const allTracks: readonly Track[] = authored;

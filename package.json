@@ -35,6 +35,7 @@
     "test:watch": "vitest",
     "assets": "bun run scripts/build-assets.ts",
     "covers": "bun run scripts/build-covers.ts",
+    "og": "bun run scripts/build-og.ts",
     "check-tracks": "bun run scripts/check-tracks.ts",
     "sync-playlist": "bun run scripts/sync-playlist.ts",
     "prepare": "lefthook install"

@@ -20,9 +20,14 @@ const catamaran = Catamaran({
   display: "swap",
 });
 
+/**
+ * Metadata stays Latin. Tamil script belongs to the lockup on the page, not to
+ * the tab title, the share card's text, or the search snippet — those get read
+ * in a lot of places that render it badly or truncate it mid-glyph.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: `${site.titleTa} · ${site.titleLatin}`,
+  title: site.titleLatin,
   description: site.description,
   applicationName: site.name,
   keywords: [
@@ -33,16 +38,16 @@ export const metadata: Metadata = {
     "90s Tamil hits",
     "Deva",
     "Ilaiyaraaja",
-    "தமிழ் பாட்டு",
+    "Vidyasagar",
   ],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: site.url,
     siteName: site.name,
-    title: `${site.titleTa} · ${site.titleLatin}`,
+    title: site.titleLatin,
     description: site.description,
-    locale: "ta_IN",
+    locale: "en_IN",
     images: [
       {
         url: "/assets/og.jpg",
@@ -54,7 +59,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${site.titleTa} · ${site.titleLatin}`,
+    title: site.titleLatin,
     description: site.description,
     images: ["/assets/og.jpg"],
   },
@@ -70,7 +75,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ta" suppressHydrationWarning>
+    // The interface is English; the Tamil that appears is tagged `lang="ta"`
+    // at the element, which is what screen readers and search engines want.
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/*
           Resolves the IST day/night period and stamps <html data-period>. Runs

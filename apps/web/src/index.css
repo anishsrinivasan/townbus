@@ -267,6 +267,44 @@ body {
   border: 0;
 }
 
+/* ---------------------------------------------------------------- presence */
+
+/*
+ * The live dot. A steady ring expanding out of it reads as a signal arriving,
+ * which is the point — a static dot could be a decoration. The ring is a
+ * pseudo-element so only it animates, and the dot itself stays crisp.
+ */
+.pulse-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: oklch(0.78 0.17 150);
+  box-shadow: 0 0 8px oklch(0.78 0.17 150 / 0.9);
+}
+
+.pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: oklch(0.78 0.17 150);
+  animation: presence-pulse 2.4s cubic-bezier(0.24, 0.6, 0.36, 1) infinite;
+}
+
+@keyframes presence-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  70%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
 /* ------------------------------------------------------------------ record */
 
 /*
@@ -343,12 +381,6 @@ body {
  * poster: the still paints instantly and with JavaScript off, and the video
  * only fades in once it can actually play (PRD §9 P2).
  */
-/* Empty until the loop is proven playable — see backdrop-video.tsx. */
-.backdrop-video-host {
-  position: absolute;
-  inset: 0;
-}
-
 .backdrop-video {
   position: absolute;
   inset: 0;
@@ -365,7 +397,7 @@ body {
   transition: opacity 900ms ease;
 }
 
-.backdrop-video-host[data-ready="true"] ~ .backdrop {
+.backdrop-video[data-ready="true"] ~ .backdrop {
   opacity: 0;
 }
 

@@ -130,10 +130,15 @@ function Meta({ track }: { track: Track | null }) {
 
   return (
     <div className="min-w-0">
-      {/* Tamil first, Latin under it — that order is half the point. */}
+      {/*
+        Tamil first, Latin under it — that order is half the point. Set in
+        Catamaran, not the Baloo display face: that one is the logo's, and a
+        song title wearing it reads as a second logo.
+      */}
       <h2
-        className="truncate font-[family-name:var(--font-baloo)] font-semibold text-[clamp(0.98rem,3.6vw,1.22rem)] text-[color:var(--tb-cream)] leading-snug"
+        className="truncate font-semibold text-[clamp(0.98rem,3.6vw,1.22rem)] text-[color:var(--tb-cream)] leading-snug"
         title={track.titleTa}
+        lang="ta"
       >
         {track.titleTa}
       </h2>

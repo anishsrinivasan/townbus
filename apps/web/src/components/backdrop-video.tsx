@@ -8,19 +8,22 @@ import { PERIOD_EVENT, readMode } from "./settings-dialog";
  * The moving backdrop (PRD §9 P2).
  *
  * Exactly one loop is ever loaded — picked from the viewer's day/night mode and
- * the current orientation — and the matching still fades off it once it plays.
- * The still is the real backdrop: it paints instantly, survives a slow
- * connection, and is all a visitor with JavaScript off or reduced motion on
- * will ever see.
+ * the current orientation — and the matching still fades off it once it is
+ * actually playing. The still is the real backdrop: it paints instantly,
+ * survives a slow connection, and is all a visitor with JavaScript off or
+ * reduced motion on will ever see.
  *
- * The element is built detached, loaded, and only put in the document once it
- * reports `canplay`, so a loop that stalls or 404s is a no-op rather than a
- * black rectangle sitting over the artwork waiting for bytes.
+ * The loop is rendered into the document straight away and sits *underneath*
+ * the stills, which is what makes that safe — an element that never loads is
+ * simply never revealed. It deliberately does not preload detached and attach
+ * on `canplay`: WebKit will not fetch media for an element outside the
+ * document, so on iOS that readiness event never arrives and the loop never
+ * appears at all.
  */
 export default function BackdropVideo() {
   const [variant, setVariant] = useState<{ period: Period; orientation: Orientation } | null>(null);
   const [ready, setReady] = useState(false);
-  const hostRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     // A loop of a bus swaying is decoration. If motion is unwelcome, or the
@@ -49,46 +52,91 @@ export default function BackdropVideo() {
     };
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the variant
   useEffect(() => {
-    if (!variant) return;
+    const video = videoRef.current;
+    if (!video || !variant) return;
+
     setReady(false);
-
-    const video = document.createElement("video");
-    video.className = "backdrop-video";
-    video.muted = true;
-    video.loop = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.preload = "auto";
-    video.setAttribute("aria-hidden", "true");
-    video.tabIndex = -1;
-    video.src = backdropVideoUrl(variant.period, variant.orientation, "mp4");
-
     let cancelled = false;
 
-    const attach = () => {
-      if (cancelled || !hostRef.current) return;
-      hostRef.current.appendChild(video);
+    /**
+     * iOS only treats a video as autoplay-eligible when `muted` is present as a
+     * content *attribute*. React sets the IDL property, which reflects to
+     * `defaultMuted` and not to the attribute, so WebKit never sees it and
+     * refuses to start. Both are set here, before the first play attempt.
+     */
+    video.defaultMuted = true;
+    video.muted = true;
+    video.setAttribute("muted", "");
+
+    // Reveal on `playing`, not `canplay` — `canplay` only means enough has
+    // buffered, and fading the still off then can expose a frame that is not
+    // being painted yet.
+    const onPlaying = () => {
+      if (!cancelled) setReady(true);
+    };
+    video.addEventListener("playing", onPlaying);
+
+    const attempt = () => {
+      if (cancelled) return;
       void video.play().catch(() => {
-        // Autoplay refused even while muted — leave the still in place.
+        // Refused — the still stays and one of the retries below has another go.
       });
-      setReady(true);
     };
 
-    video.addEventListener("canplay", attach, { once: true });
-    video.load();
+    /**
+     * The retries are the whole trick. On a cold load `play()` is called while
+     * `readyState` is still 0, and WebKit rejects a play on a video with no
+     * data rather than queueing it — which is why the loop would only ever
+     * start after a day/night switch happened to call it again on a warm cache.
+     * So: try now, try again the moment data lands, and once more on the first
+     * touch in case Low Power Mode or a cellular policy refused it outright.
+     */
+    attempt();
+    video.addEventListener("loadeddata", attempt);
+    video.addEventListener("canplay", attempt);
+
+    const onGesture = () => attempt();
+    window.addEventListener("pointerdown", onGesture, { once: true, passive: true });
+    window.addEventListener("touchstart", onGesture, { once: true, passive: true });
+
+    // Coming back to a backgrounded tab also drops the loop on iOS.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && video.paused) attempt();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       cancelled = true;
-      video.removeEventListener("canplay", attach);
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-      video.remove();
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("loadeddata", attempt);
+      video.removeEventListener("canplay", attempt);
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("touchstart", onGesture);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [variant]);
+  }, [variant?.period, variant?.orientation]);
+
+  if (!variant) return null;
 
   return (
-    <div ref={hostRef} className="backdrop-video-host" data-ready={ready} aria-hidden="true" />
+    <video
+      // Remount on variant change so the browser drops the previous download.
+      key={`${variant.period}-${variant.orientation}`}
+      ref={videoRef}
+      className="backdrop-video"
+      data-ready={ready}
+      src={backdropVideoUrl(variant.period, variant.orientation, "mp4")}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="auto"
+      // Keep the loop off AirPlay and the picture-in-picture menu.
+      disableRemotePlayback
+      aria-hidden="true"
+      tabIndex={-1}
+    />
   );
 }

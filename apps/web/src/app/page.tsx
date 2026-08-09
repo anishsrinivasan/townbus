@@ -36,7 +36,7 @@ export default function Home() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "MusicPlaylist",
-            name: `${site.titleTa} · ${site.titleLatin}`,
+            name: site.titleLatin,
             description: site.description,
             url: site.url,
             numTracks: tracks.length,

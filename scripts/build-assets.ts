@@ -72,13 +72,8 @@ const QUALITY = {
 
 const BUDGET_BYTES = 350 * 1024;
 
-const OG = {
-  width: 1200,
-  height: 630,
-  title: "டவுன் பஸ் ஹிட்ஸ்",
-  subtitle: "TOWN BUS HITS",
-  caption: "Tamil kuthu, gaana &amp; melody · 1985–2010",
-};
+// The OG share card is built by `bun run og` from its own base plate — it is
+// art-directed for a small wide thumbnail, not cropped out of a backdrop.
 
 async function encodeVariant(
   sourcePath: string,
@@ -117,56 +112,6 @@ async function encodeVariant(
   }
 
   return rows;
-}
-
-/**
- * OG card: a 1200×630 crop of the night landscape with the lockup laid over it.
- * The Tamil is real text rendered by librsvg through sharp — never an image
- * model, which mangles Tamil glyphs (PRD §3).
- */
-async function buildOgImage(nightLandscape: string) {
-  const scrim = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${OG.width}" height="${OG.height}">
-      <defs>
-        <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#0b0705" stop-opacity="0.30"/>
-          <stop offset="55%" stop-color="#0b0705" stop-opacity="0.62"/>
-          <stop offset="100%" stop-color="#0b0705" stop-opacity="0.88"/>
-        </linearGradient>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#veil)"/>
-    </svg>`,
-  );
-
-  const lockup = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${OG.width}" height="${OG.height}">
-      <style>
-        .ta { font-family: "Baloo Thambi 2", "Noto Sans Tamil", "Latha", sans-serif;
-              font-size: 108px; font-weight: 800; fill: #ffcf70; }
-        .la { font-family: "Catamaran", "Helvetica Neue", sans-serif;
-              font-size: 34px; font-weight: 800; letter-spacing: 14px; fill: #f6ece0; }
-        .cap { font-family: "Catamaran", "Helvetica Neue", sans-serif;
-               font-size: 24px; font-weight: 500; letter-spacing: 2px; fill: #c9b7a6; }
-        .off { fill: #a8320f; }
-      </style>
-      <text class="ta off" x="${OG.width / 2}" y="298" text-anchor="middle">${OG.title}</text>
-      <text class="ta" x="${OG.width / 2 - 5}" y="293" text-anchor="middle">${OG.title}</text>
-      <text class="la" x="${OG.width / 2}" y="358" text-anchor="middle">${OG.subtitle}</text>
-      <text class="cap" x="${OG.width / 2}" y="428" text-anchor="middle">${OG.caption}</text>
-    </svg>`,
-  );
-
-  const buffer = await sharp(nightLandscape)
-    .resize(OG.width, OG.height, { fit: "cover", position: "attention" })
-    .composite([
-      { input: scrim, top: 0, left: 0 },
-      { input: lockup, top: 0, left: 0 },
-    ])
-    .jpeg({ quality: 86, mozjpeg: true })
-    .toBuffer();
-
-  await Bun.write(join(OUT_DIR, "og.jpg"), buffer);
-  return buffer.byteLength / 1024;
 }
 
 /**
@@ -288,13 +233,6 @@ async function main() {
     }
   }
 
-  const nightLandscape = join(
-    SOURCE_DIR,
-    sources.find((f) => f.startsWith("bg-night-landscape")) as string,
-  );
-  const ogKb = await buildOgImage(nightLandscape);
-  console.log(`\nog.jpg${" ".repeat(29)}${ogKb.toFixed(0).padStart(5)} KB`);
-
   const videoRows = await encodeVideos();
 
   const over = rows.filter((row) => row.kb * 1024 > BUDGET_BYTES);
@@ -307,7 +245,7 @@ async function main() {
 
   const videoMb = videoRows.reduce((total, row) => total + row.kb, 0) / 1024;
   console.log(
-    `\n✓ ${rows.length} backdrop variants + OG card, all under ${BUDGET_BYTES / 1024} KB` +
+    `\n✓ ${rows.length} backdrop variants, all under ${BUDGET_BYTES / 1024} KB` +
       (videoRows.length
         ? `\n✓ ${videoRows.length} backdrop loops, ${videoMb.toFixed(1)} MB total`
         : "") +

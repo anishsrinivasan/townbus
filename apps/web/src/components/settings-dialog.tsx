@@ -80,7 +80,7 @@ export default function SettingsDialog({ className = "" }: { className?: string 
                 sheet is dismissed by tapping out or pressing Escape. */}
             <div className="sheet-grip" aria-hidden="true" />
 
-            <Dialog.Title className="px-1 pb-1 font-[family-name:var(--font-baloo)] font-semibold text-[1.05rem] text-[color:var(--tb-cream)]">
+            <Dialog.Title className="px-1 pb-1 font-semibold text-[1.05rem] text-[color:var(--tb-cream)]">
               Settings
             </Dialog.Title>
             <Dialog.Description className="px-1 pb-4 text-[0.78rem] text-[color:var(--tb-muted)]">

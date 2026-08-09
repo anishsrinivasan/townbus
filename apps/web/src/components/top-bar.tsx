@@ -62,7 +62,7 @@ export default function TopBar() {
       >
         {now && (
           <>
-            <span className="size-2 rounded-full bg-[oklch(0.78_0.17_150)] shadow-[0_0_8px_oklch(0.78_0.17_150/0.9)]" />
+            <span className="pulse-dot" />
             <span className="tabular-nums">{placeholderListenerCount(hour, minute)}</span>
             <span className="text-[color:var(--tb-cream)]/55">online</span>
           </>
