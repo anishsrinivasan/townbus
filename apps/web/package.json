@@ -9,7 +9,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@swc/helpers": "^0.5.23",
+    "@townbus/adapter-links": "workspace:*",
+    "@townbus/adapter-youtube": "workspace:*",
+    "@townbus/content": "workspace:*",
+    "@townbus/engine": "workspace:*",
     "@townbus/env": "workspace:*",
     "@townbus/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",

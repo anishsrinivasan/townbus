@@ -5,7 +5,7 @@ import { Input } from "@townbus/ui/components/input";
 import { Textarea } from "@townbus/ui/components/textarea";
 import { cn } from "@townbus/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
-import * as React from "react";
+import type * as React from "react";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -146,7 +146,7 @@ export {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupText,
   InputGroupInput,
+  InputGroupText,
   InputGroupTextarea,
 };

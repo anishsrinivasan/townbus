@@ -9,7 +9,7 @@ import {
 import { Button } from "@townbus/ui/components/button";
 import { cn } from "@townbus/ui/lib/utils";
 import { ArrowDownIcon } from "lucide-react";
-import * as React from "react";
+import type * as React from "react";
 
 function MessageScrollerProvider(
   props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>,
@@ -117,12 +117,12 @@ function MessageScrollerButton({
 }
 
 export {
-  MessageScrollerProvider,
   MessageScroller,
-  MessageScrollerViewport,
+  MessageScrollerButton,
   MessageScrollerContent,
   MessageScrollerItem,
-  MessageScrollerButton,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
   useMessageScroller,
   useMessageScrollerScrollable,
   useMessageScrollerVisibility,

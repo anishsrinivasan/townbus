@@ -1,1 +1,489 @@
 @import "@townbus/ui/globals.css";
+
+/*
+ * BusPaattu palette, pulled off the night still: the sodium bulb over the
+ * driver, the blue-green seat metal, and the rust-red painted trim above the
+ * windscreen. Everything on the page is one of these three plus cream type.
+ */
+:root {
+  --tb-night: oklch(0.15 0.018 62);
+  --tb-night-deep: oklch(0.11 0.014 58);
+  --tb-amber: oklch(0.84 0.148 78);
+  --tb-amber-dim: oklch(0.7 0.145 66);
+  --tb-teal: oklch(0.48 0.062 214);
+  --tb-teal-dim: oklch(0.34 0.048 218);
+  --tb-rust: oklch(0.47 0.163 32);
+  --tb-cream: oklch(0.95 0.02 82);
+  --tb-muted: oklch(0.74 0.032 74);
+
+  --tb-card: oklch(0.17 0.018 56 / 0.62);
+  --tb-card-border: oklch(0.95 0.02 82 / 0.14);
+
+  color-scheme: dark;
+}
+
+/* Morning: the same page, lit by 6am sun through a rice field. */
+:root[data-period="morning"] {
+  --tb-night: oklch(0.24 0.028 72);
+  --tb-night-deep: oklch(0.18 0.024 68);
+  --tb-card: oklch(0.2 0.024 64 / 0.58);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--tb-night-deep);
+  color: var(--tb-cream);
+  font-family: var(--font-catamaran), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* The player card is bottom-anchored; never let the page bounce past it. */
+  overscroll-behavior-y: none;
+}
+
+/* ---------------------------------------------------------------- backdrop */
+
+/*
+ * The stage holds the artwork, the loop, the scrim and the grain, at z-index 0
+ * with the page content lifted to 1. Note the z-index is 0 and not negative: a
+ * negative one would put the whole thing behind the canvas, which the body
+ * background paints over, and the backdrop would silently never appear.
+ */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/*
+ * Night is the default so the page still has artwork with JavaScript off — the
+ * inline resolver in <head> only ever swaps it to morning.
+ */
+.backdrop--night {
+  display: block;
+}
+
+:root[data-period="morning"] .backdrop--night {
+  display: none;
+}
+
+:root[data-period="morning"] .backdrop--morning {
+  display: block;
+}
+
+/*
+ * Scrim. Light on purpose: the stills are the product, and every extra point
+ * of black is a point of painterly detail thrown away. Just enough at the top
+ * and bottom edges to keep the chrome and the deck legible.
+ */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      oklch(0.11 0.014 58 / 0.42) 0%,
+      oklch(0.11 0.014 58 / 0.08) 22%,
+      oklch(0.11 0.014 58 / 0.06) 55%,
+      oklch(0.09 0.012 56 / 0.55) 88%,
+      oklch(0.09 0.012 56 / 0.72) 100%
+    ),
+    radial-gradient(90% 55% at 50% 44%, oklch(0.09 0.012 56 / 0.34) 0%, transparent 72%);
+}
+
+/*
+ * Print grain — a repeating fractal-noise tile that stops the painterly stills
+ * reading as a photograph.
+ *
+ * Plain alpha rather than a blend mode: `overlay` resolves to roughly
+ * 2 × base × blend wherever the base is dark, and these stills are mostly dark,
+ * so it drags the whole page toward black for no gain. At this opacity the
+ * texture reads correctly on its own.
+ */
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------ title lockup */
+
+/*
+ * Hand-painted bus lettering: cream face with one hard rust offset — the sign
+ * painter's shadow pass, laid down with a second brush and no blur, because a
+ * painted edge is hard. The earlier amber-on-amber version glowed, which read
+ * as neon rather than paint and turned to mud over a busy still.
+ */
+.lockup-ta {
+  font-family: var(--font-baloo), var(--font-catamaran), sans-serif;
+  font-weight: 800;
+  /* Roomy enough for Tamil descenders on the wrapped line. */
+  line-height: 1.28;
+  color: var(--tb-cream);
+  text-shadow:
+    0.042em 0.05em 0 var(--tb-rust),
+    0 0.1em 0.42em oklch(0.06 0.01 50 / 0.72);
+}
+
+.lockup-la {
+  font-family: var(--font-catamaran), sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.42em;
+  /* Tracking adds space after the last letter; pull the block back to centre. */
+  text-indent: 0.42em;
+  color: var(--tb-amber);
+  text-shadow: 0 0.08em 0.4em oklch(0.06 0.01 50 / 0.9);
+}
+
+/* -------------------------------------------------------------- player card */
+
+/*
+ * A capsule floating on the artwork, not a bar bolted to the bottom of it.
+ *
+ * The frosted glass is a Tailwind `backdrop-blur-*` utility on the element, not
+ * a `backdrop-filter` here: Lightning CSS resolves a hand-written pair against
+ * the browser targets and emits only `-webkit-backdrop-filter`, which then does
+ * not apply, so the panel silently renders as flat translucency.
+ */
+.card {
+  background: var(--tb-card);
+  border: 1px solid var(--tb-card-border);
+  box-shadow:
+    0 1px 0 oklch(0.95 0.02 82 / 0.12) inset,
+    0 24px 60px -18px oklch(0.05 0.01 50 / 0.9);
+}
+
+/* Hairline seek — a progress line that happens to be draggable. */
+.seek {
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.seek::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--tb-cream) 0%,
+    var(--tb-cream) var(--seek-progress, 0%),
+    oklch(0.95 0.02 82 / 0.22) var(--seek-progress, 0%),
+    oklch(0.95 0.02 82 / 0.22) 100%
+  );
+}
+
+.seek::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--tb-cream) 0%,
+    var(--tb-cream) var(--seek-progress, 0%),
+    oklch(0.95 0.02 82 / 0.22) var(--seek-progress, 0%),
+    oklch(0.95 0.02 82 / 0.22) 100%
+  );
+}
+
+/* Thumb hides until the row is hovered or focused, so the line stays a line. */
+.seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+  border-radius: 999px;
+  background: var(--tb-cream);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.seek::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tb-cream);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card:hover .seek::-webkit-slider-thumb,
+.seek:focus-visible::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+.card:hover .seek::-moz-range-thumb,
+.seek:focus-visible::-moz-range-thumb {
+  opacity: 1;
+}
+
+.seek:focus-visible {
+  outline: 2px solid var(--tb-amber);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.seek:disabled {
+  cursor: default;
+}
+
+/*
+ * The YouTube iframe. Kept visible and unobscured — required by YouTube's ToS
+ * (PRD §5), so it is dressed as the deck window above the driver rather than
+ * hidden. Nothing is ever layered on top of it.
+ */
+.deck {
+  position: relative;
+  overflow: hidden;
+  background: var(--tb-night-deep);
+  border: 1px solid var(--tb-card-border);
+  box-shadow: 0 2px 12px oklch(0.06 0.01 50 / 0.7) inset;
+}
+
+.deck iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ record */
+
+/*
+ * The cover as a record on a deck. Art is a square baked by `bun run covers`
+ * and served from our own origin, so the disc is a true square crop rather
+ * than a 4:3 thumbnail squeezed into a circle.
+ */
+.record {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--tb-night-deep);
+  box-shadow:
+    0 0 0 1px oklch(0.95 0.02 82 / 0.16),
+    0 8px 22px -8px oklch(0.05 0.01 50 / 0.95);
+}
+
+.record img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: record-spin 9s linear infinite;
+  animation-play-state: paused;
+}
+
+/*
+ * Fallback for a cover that never arrives — grooved vinyl with an amber label,
+ * so a missing image still reads as a record rather than a hole in the pill.
+ * It sits under the <img>, which is simply hidden when it fails.
+ */
+.record[data-blank] {
+  background:
+    radial-gradient(circle at 50% 50%, var(--tb-amber-dim) 0 26%, transparent 26%),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      oklch(0.28 0.02 60) 0 2px,
+      oklch(0.2 0.018 58) 2px 4px
+    );
+}
+
+.record[data-spinning="true"] img {
+  animation-play-state: running;
+}
+
+/* Spindle hole, plus a fixed sheen that does not turn with the record. */
+.record::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      var(--tb-night-deep) 0 7%,
+      oklch(0.95 0.02 82 / 0.4) 7% 8.5%,
+      transparent 8.5%
+    ),
+    linear-gradient(125deg, oklch(1 0 0 / 0.15) 0%, transparent 40%, oklch(0 0 0 / 0.25) 100%);
+}
+
+@keyframes record-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------- backdrop video */
+
+/*
+ * The loop sits directly over its own still, which stays underneath as the
+ * poster: the still paints instantly and with JavaScript off, and the video
+ * only fades in once it can actually play (PRD §9 P2).
+ */
+/* Empty until the loop is proven playable — see backdrop-video.tsx. */
+.backdrop-video-host {
+  position: absolute;
+  inset: 0;
+}
+
+.backdrop-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * The reveal runs on the stills, not the video: the loop sits underneath and
+ * the matching still fades off it once it is playing.
+ */
+.backdrop {
+  transition: opacity 900ms ease;
+}
+
+.backdrop-video-host[data-ready="true"] ~ .backdrop {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------- sheet */
+
+/*
+ * Dim only — no `backdrop-filter` here. A filtered backdrop becomes its own
+ * backdrop root, and the sheet stacked above it then has nothing left to
+ * sample, so its glass silently renders as flat translucency and the title
+ * underneath reads straight through the panel. All the blur lives on `.sheet`.
+ */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: oklch(0.06 0.01 50 / 0.62);
+  transition: opacity 260ms ease;
+}
+
+.sheet-backdrop[data-starting-style],
+.sheet-backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+.sheet-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/*
+ * Frosted glass. The heavy blur plus a saturation boost is what makes the
+ * painted backdrop read *through* the panel as colour rather than grey — the
+ * inner top highlight and the hairline border are the edges that sell it as a
+ * physical pane sitting above the page.
+ */
+.sheet {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 30rem;
+  padding: 0.75rem 1rem calc(1.15rem + env(safe-area-inset-bottom));
+  border-radius: 1.75rem 1.75rem 0 0;
+  background: oklch(0.18 0.02 58 / 0.78);
+  border: 1px solid oklch(0.95 0.02 82 / 0.16);
+  border-bottom: 0;
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.16) inset,
+    0 -20px 60px -20px oklch(0.05 0.01 50 / 0.9);
+  transition:
+    transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 240ms ease;
+}
+
+/* Comes up from the bottom edge, under the thumb. */
+.sheet[data-starting-style],
+.sheet[data-ending-style] {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.sheet-grip {
+  width: 2.25rem;
+  height: 0.25rem;
+  margin: 0 auto 0.85rem;
+  border-radius: 999px;
+  background: oklch(0.95 0.02 82 / 0.28);
+}
+
+/* On a desktop it is a panel in the middle, not a sheet on the edge. */
+@media (min-width: 640px) {
+  .sheet-viewport {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .sheet {
+    max-width: 26rem;
+    padding: 1.25rem 1.25rem 1.25rem;
+    border-radius: 1.75rem;
+    border-bottom: 1px solid oklch(0.95 0.02 82 / 0.14);
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.16) inset,
+      0 30px 70px -25px oklch(0.05 0.01 50 / 0.95);
+  }
+
+  .sheet[data-starting-style],
+  .sheet[data-ending-style] {
+    transform: translateY(0.75rem) scale(0.97);
+  }
+
+  .sheet-grip {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ motion */
+
+/*
+ * Motion is limited to the record turning and a few transitions, but honouring
+ * the preference from day one is what made the video backdrop safe to add.
+ *
+ * `!important` is the point of this block, not an oversight: it has to beat
+ * every animation on the page, including Tailwind utilities and anything a
+ * component sets inline. Nothing else in this file uses it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* biome-ignore-start lint/complexity/noImportantStyles: must override every animation */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: must override every animation */
+}
