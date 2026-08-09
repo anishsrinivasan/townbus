@@ -1,0 +1,3 @@
+{
+  "extends": "@townbus/config/tsconfig.base.json"
+}
