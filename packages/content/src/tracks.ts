@@ -999,6 +999,16 @@ export const tracks: readonly Track[] = [
     vibe: "kuthu",
   },
   {
+    youtubeId: "sFOiKGTOedQ",
+    title: "Erukkanchedi Oram",
+    titleTa: "எருக்கஞ்செடி ஓரம்",
+    movie: "Santhaikku Vantha Kili",
+    year: 1994,
+    composer: "Deva",
+    era: "90s",
+    vibe: "melody",
+  },
+  {
     youtubeId: "S9Jolu4ASxQ",
     title: "Thendral Vandhu",
     titleTa: "தென்றல் வந்து",
