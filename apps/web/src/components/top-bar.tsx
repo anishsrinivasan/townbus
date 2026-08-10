@@ -65,7 +65,9 @@ export default function TopBar() {
           <>
             <span className="pulse-dot" />
             <span className="tabular-nums">{placeholderListenerCount(hour, minute)}</span>
-            <span className="text-[color:var(--tb-cream)]/55">online</span>
+            {/* "on the bus", not "online" — the count is people riding along,
+                and the whole page is a bus. */}
+            <span className="text-[color:var(--tb-cream)]/55">on the bus</span>
           </>
         )}
       </span>
