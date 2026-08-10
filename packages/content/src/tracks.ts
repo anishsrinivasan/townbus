@@ -979,6 +979,16 @@ export const tracks: readonly Track[] = [
     vibe: "melody",
   },
   {
+    youtubeId: "Cvys4wqsoVA",
+    title: "Malligai Mottu",
+    titleTa: "மல்லிகை மொட்டு",
+    movie: "Sakthivel",
+    year: 1994,
+    composer: "Ilaiyaraaja",
+    era: "90s",
+    vibe: "melody",
+  },
+  {
     youtubeId: "g3wNV6Hi0B4",
     title: "Vaadi Vethalai",
     titleTa: "வாடி வெத்தலை",

@@ -497,6 +497,78 @@ body {
   }
 }
 
+/* ---------------------------------------------------------- search palette */
+
+/*
+ * The shadcn command palette ships on a light `popover` surface, which lands
+ * as a white card in the middle of a night bus. This dresses it in the same
+ * glass as the settings sheet.
+ *
+ * Plain class selectors are enough to win: Tailwind's utilities live in a
+ * cascade layer and this file is unlayered, so it takes precedence without
+ * `!important`.
+ */
+.search-palette {
+  background: oklch(0.18 0.02 58 / 0.82);
+  border: 1px solid oklch(0.95 0.02 82 / 0.16);
+  border-radius: 1.5rem;
+  color: var(--tb-cream);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.14) inset,
+    0 30px 70px -25px oklch(0.05 0.01 50 / 0.95);
+}
+
+.search-palette [data-slot="command"] {
+  background: transparent;
+  color: var(--tb-cream);
+}
+
+/* The input sits in an `InputGroup`, which brings its own light fill. */
+.search-palette [data-slot="command-input-wrapper"],
+.search-palette [data-slot="input-group"] {
+  border: 0;
+  border-bottom: 1px solid oklch(0.95 0.02 82 / 0.12);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding-inline: 0.35rem;
+}
+
+.search-palette [data-slot="command-input"] {
+  background: transparent;
+  color: var(--tb-cream);
+  border: 0;
+  box-shadow: none;
+  font-size: 0.95rem;
+}
+
+.search-palette [data-slot="command-input"]::placeholder {
+  color: oklch(0.74 0.032 74 / 0.7);
+}
+
+.search-palette [data-slot="command-list"] {
+  padding: 0.35rem;
+  scrollbar-width: thin;
+}
+
+.search-palette [data-slot="command-item"] {
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  color: var(--tb-cream);
+}
+
+/* cmdk marks the keyboard-highlighted row with `aria-selected`. */
+.search-palette [data-slot="command-item"][aria-selected="true"] {
+  background: oklch(0.95 0.02 82 / 0.12);
+  color: var(--tb-cream);
+}
+
+.search-palette [data-slot="command-empty"] {
+  color: var(--tb-muted);
+  padding: 1.75rem 1rem;
+  font-size: 0.85rem;
+}
+
 /* ------------------------------------------------------------------ motion */
 
 /*

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { placeholderListenerCount } from "@/lib/presence";
 import LinkOuts from "./link-outs";
+import SearchDialog from "./search-dialog";
 import SettingsDialog from "./settings-dialog";
 
 /** IST wall clock — the page is set in Tamil Nadu wherever it is opened. */
@@ -71,6 +72,7 @@ export default function TopBar() {
 
       <div className="flex items-center justify-self-end sm:gap-3">
         <LinkOuts />
+        <SearchDialog />
         <SettingsDialog />
       </div>
     </div>

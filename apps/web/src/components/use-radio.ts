@@ -12,7 +12,9 @@ import {
   prev,
   type Queue,
 } from "@townbus/engine";
+import { parseAsString, useQueryState } from "nuqs";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { SELECT_TRACK_EVENT } from "./search-dialog";
 
 const TICK_MS = 250;
 
@@ -43,14 +45,40 @@ export function useRadio(deckRef: RefObject<HTMLDivElement | null>) {
   const track = currentTrack(queue);
 
   /**
+   * `?id={youtubeId}` — the shareable deep link (PRD §9 P1).
+   *
+   * Held in nuqs so the URL and the player stay one piece of state: arriving
+   * with an id opens on that track, and changing track rewrites the id, so the
+   * address bar is always something worth copying.
+   *
+   * `history: "replace"` on purpose — every track change pushing an entry would
+   * turn the browser's back button into a rewind button, which is not what it
+   * means anywhere else.
+   */
+  const [linkedId, setLinkedId] = useQueryState(
+    "id",
+    parseAsString.withOptions({ history: "replace", scroll: false }),
+  );
+
+  /**
    * Shuffle on mount, not on first render: the seed is clock-derived, so doing
    * it during render would make the client HTML disagree with the build output.
-   * `?t={youtubeId}` opens straight on a shared track.
    */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount only; the id is read once
   useEffect(() => {
-    const startId = new URLSearchParams(window.location.search).get("t") ?? undefined;
-    setQueue(createQueue(tracks, { seed: Date.now() >>> 0, shuffle: true, startId }));
+    setQueue(
+      createQueue(tracks, {
+        seed: Date.now() >>> 0,
+        shuffle: true,
+        startId: linkedId ?? undefined,
+      }),
+    );
   }, []);
+
+  /** Keep the address bar pointing at whatever is playing. */
+  useEffect(() => {
+    if (track && track.youtubeId !== linkedId) void setLinkedId(track.youtubeId);
+  }, [track, linkedId, setLinkedId]);
 
   /** Callbacks the player closes over — kept in a ref so it is created once. */
   const handlers = useRef({
@@ -142,6 +170,27 @@ export function useRadio(deckRef: RefObject<HTMLDivElement | null>) {
     [],
   );
 
+  /**
+   * Picking a song from search should start it, not just queue it silently.
+   * The click is the user gesture the browser wants, so marking playback as
+   * started here means the load effect autoplays it.
+   */
+  const playTrack = useCallback((youtubeId: string) => {
+    startedRef.current = true;
+    setStarted(true);
+    setQueue((current) => jumpToId(current, youtubeId));
+  }, []);
+
+  /** Search lives in the header; the queue lives here. */
+  useEffect(() => {
+    const onSelect = (event: Event) => {
+      const youtubeId = (event as CustomEvent<string>).detail;
+      if (typeof youtubeId === "string") playTrack(youtubeId);
+    };
+    window.addEventListener(SELECT_TRACK_EVENT, onSelect);
+    return () => window.removeEventListener(SELECT_TRACK_EVENT, onSelect);
+  }, [playTrack]);
+
   const seek = useCallback((seconds: number) => {
     setElapsed(seconds);
     playerRef.current?.seekTo(seconds);
@@ -194,6 +243,7 @@ export function useRadio(deckRef: RefObject<HTMLDivElement | null>) {
     skipNext,
     skipPrev,
     selectTrack,
+    playTrack,
     seek,
     setScrubbing,
   };

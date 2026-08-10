@@ -49,6 +49,7 @@ export {
   type Queue,
   setShuffle,
 } from "./queue";
+export { normalize, type SearchResult, searchTracks } from "./search";
 export { createRandom, shuffle } from "./shuffle";
 export {
   containsTamil,

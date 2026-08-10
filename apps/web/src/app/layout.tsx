@@ -1,6 +1,9 @@
 import { periodScript } from "@townbus/engine";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Baloo_Thambi_2, Catamaran } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 
 import "../index.css";
 import { site } from "@/lib/site";
@@ -88,7 +91,27 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="preconnect" href="https://i.ytimg.com" />
         <link rel="preconnect" href="https://www.youtube-nocookie.com" />
       </head>
-      <body className={`${baloo.variable} ${catamaran.variable}`}>{children}</body>
+      <body className={`${baloo.variable} ${catamaran.variable}`}>
+        {/*
+          nuqs needs an adapter to reach the router. It reads `useSearchParams`,
+          which under `output: "export"` has nothing to read at build time, so
+          everything below it has to sit inside a Suspense boundary or the build
+          refuses. The fallback is never seen in practice — the boundary
+          resolves on hydration.
+        */}
+        <NuqsAdapter>
+          <Suspense fallback={null}>{children}</Suspense>
+        </NuqsAdapter>
+        {/*
+          Vercel Analytics. Cookieless and page-level, which is all the PRD's
+          success metrics need — unique visitors, session length, and how many
+          mobile sessions get as far as a play (§11).
+
+          Rendered last so its script never sits ahead of the backdrop or the
+          player in the loading order.
+        */}
+        <Analytics />
+      </body>
     </html>
   );
 }
